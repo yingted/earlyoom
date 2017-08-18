@@ -18,6 +18,7 @@ int main(int argc, char *argv[])
 {
 	int kernel_oom_killer = 0;
 	unsigned long oom_cnt = 0;
+	unsigned int check_interval_us = 100000; // 100ms
 	/* If the available memory goes below this percentage, we start killing
 	 * processes. 10 is a good start. */
 	int mem_min_percent = 10, swap_min_percent = 10;
@@ -48,7 +49,7 @@ int main(int argc, char *argv[])
 	}
 
 	int c;
-	while((c = getopt (argc, argv, "m:s:kidvh")) != -1)
+	while((c = getopt (argc, argv, "m:s:t:kidvh")) != -1)
 	{
 		switch(c)
 		{
@@ -64,6 +65,13 @@ int main(int argc, char *argv[])
 				if(swap_min_percent <= 0 || swap_min_percent > 100) {
 					fprintf(stderr, "-s: Invalid percentage\n");
 					exit(16);
+				}
+				break;
+            case 't':
+				check_interval_us = strtol(optarg, NULL, 10);
+				if(check_interval_us <= 0 || check_interval_us > 1000000) {
+					fprintf(stderr, "-t: invalid check interval\n");
+					exit(17);
 				}
 				break;
 			case 'k':
@@ -84,6 +92,7 @@ int main(int argc, char *argv[])
 					"Usage: earlyoom [-m PERCENT] [-s PERCENT] [-k|-i] [-h]\n"
 					"-m ... set available memory minimum to PERCENT of total (default 10 %%)\n"
 					"-s ... set free swap minimum to PERCENT of total (default 10 %%)\n"
+					"-t ... set check interval in us (default 100,000 us)\n"
 					"-k ... use kernel oom killer instead of own user-space implementation\n"
 					"-i ... user-space oom killer should ignore positive oom_score_adj values\n"
 					"-d ... enable debugging messages\n"
@@ -143,7 +152,7 @@ int main(int argc, char *argv[])
 			oom_cnt++;
 		}
 		
-		usleep(100000); // 100ms
+		usleep(check_interval_us);
 	}
 	
 	return 0;
